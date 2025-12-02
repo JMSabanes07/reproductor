@@ -585,7 +585,8 @@ io.on('connection', socket => {
   })
 })
 
-const PORT = process.env.PORT || 3000
+console.log('process.env.PORT', process.env.PORT)
+const PORT = process.env.PORT
 
 httpServer.listen(PORT, () => {
   console.log(`[SERVER] Server running on port ${PORT}`)
