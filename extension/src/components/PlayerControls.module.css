@@ -1,0 +1,50 @@
+.container {
+  padding: 20px;
+  margin: 16px;
+}
+
+.controls {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.controlButton {
+  background: var(--surface);
+  border: none;
+  border-radius: var(--radius-full);
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: var(--text-primary);
+}
+
+.controlButton.primary {
+  width: 56px;
+  height: 56px;
+  background: var(--primary);
+  color: var(--text-inverse);
+}
+
+.controlButtonv2 {
+  background: var(--background);
+  border: none;
+  width: 2.5rem;
+  height: 2.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: var(--text-secondary);
+  border-radius: var(--radius-full);
+}
+
+.controlButtonv2.primary {
+  background: var(--primary);
+  color: var(--text-inverse);
+}
