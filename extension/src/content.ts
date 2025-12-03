@@ -7,9 +7,43 @@ const SERVER_URL = import.meta.env.VITE_SERVER_URL || 'http://localhost:3000'
 console.log('[CONTENT] Connecting to server:', SERVER_URL)
 const socket = io(SERVER_URL)
 
+let currentGuildId: string | null = null
+
+// Load guild_id from chrome.storage
+chrome.storage.local.get(['discord_guild_id'], result => {
+  currentGuildId = (result.discord_guild_id as string) || null
+  console.log('[CONTENT] Loaded guild_id from storage:', currentGuildId)
+
+  // If already connected and have guild_id, join the room
+  if (socket.connected && currentGuildId) {
+    console.log('[CONTENT] Joining guild:', currentGuildId)
+    socket.emit('join_guild', currentGuildId)
+  }
+})
+
+// Listen for changes in guild_id
+chrome.storage.onChanged.addListener((changes, areaName) => {
+  if (areaName === 'local' && changes.discord_guild_id) {
+    currentGuildId = (changes.discord_guild_id.newValue as string) || null
+    console.log('[CONTENT] Guild ID updated:', currentGuildId)
+
+    // Join the new guild room if connected
+    if (socket.connected && currentGuildId) {
+      console.log('[CONTENT] Joining new guild:', currentGuildId)
+      socket.emit('join_guild', currentGuildId)
+    }
+  }
+})
+
 socket.on('connect', () => {
   console.log('[CONTENT] Connected to Discord Music Player Server')
   console.log('[CONTENT] Socket ID:', socket.id)
+
+  // Join guild room on connect if we have a guild_id
+  if (currentGuildId) {
+    console.log('[CONTENT] Joining guild on connect:', currentGuildId)
+    socket.emit('join_guild', currentGuildId)
+  }
 })
 
 socket.on('connect_error', error => {
@@ -107,9 +141,16 @@ function addToDiscord(btn: HTMLButtonElement, originalIcon: string, isPlaylist =
 
   console.log('[CONTENT] Payload to send:', JSON.stringify(payload, null, 2))
   console.log('[CONTENT] Socket connected:', socket.connected)
+  console.log('[CONTENT] Current guild_id:', currentGuildId)
 
   if (!socket.connected) {
     console.error('[CONTENT] Socket not connected!')
+    return
+  }
+
+  if (!currentGuildId) {
+    console.error('[CONTENT] No guild_id set! Please set Discord Server ID in the extension popup.')
+    alert('Please set your Discord Server ID in the extension popup first!')
     return
   }
 
@@ -155,13 +196,21 @@ function injectButtons() {
     container.style.alignItems = 'center'
     container.style.gap = '4px'
 
-    const addSongBtn = createButton(PLUS_ICON, () => addToDiscord(addSongBtn, PLUS_ICON, false), true)
+    const addSongBtn = createButton(
+      PLUS_ICON,
+      () => addToDiscord(addSongBtn, PLUS_ICON, false),
+      true
+    )
     addSongBtn.title = 'Add Song to Discord Player'
     container.appendChild(addSongBtn)
 
     if (new URLSearchParams(window.location.search).get('list')) {
       console.log('[CONTENT] Playlist detected, adding playlist button')
-      const addPlaylistBtn = createButton(LIST_PLUS_ICON, () => addToDiscord(addPlaylistBtn, LIST_PLUS_ICON, true), false)
+      const addPlaylistBtn = createButton(
+        LIST_PLUS_ICON,
+        () => addToDiscord(addPlaylistBtn, LIST_PLUS_ICON, true),
+        false
+      )
       addPlaylistBtn.title = 'Add Playlist to Discord Player'
       container.appendChild(addPlaylistBtn)
     }

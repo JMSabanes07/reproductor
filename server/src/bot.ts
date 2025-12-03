@@ -1,14 +1,19 @@
 import { Client, GatewayIntentBits } from 'discord.js'
-import { Shoukaku, Connectors } from 'shoukaku'
 import dotenv from 'dotenv'
 import { EventEmitter } from 'events'
+import { Connectors, Shoukaku } from 'shoukaku'
 
 dotenv.config()
 
 export const audioEvents = new EventEmitter()
 
 const client = new Client({
-  intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildVoiceStates, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent],
+  intents: [
+    GatewayIntentBits.Guilds,
+    GatewayIntentBits.GuildVoiceStates,
+    GatewayIntentBits.GuildMessages,
+    GatewayIntentBits.MessageContent,
+  ],
 })
 
 const Nodes = [
@@ -23,7 +28,9 @@ const shoukaku = new Shoukaku(new Connectors.DiscordJS(client), Nodes)
 
 shoukaku.on('error', (_, error) => console.error('[SHOUKAKU ERROR]', error))
 shoukaku.on('ready', name => console.log(`[SHOUKAKU] Node ${name} is ready`))
-shoukaku.on('close', (name, code, reason) => console.warn(`[SHOUKAKU] Node ${name} closed with code ${code} reason ${reason}`))
+shoukaku.on('close', (name, code, reason) =>
+  console.warn(`[SHOUKAKU] Node ${name} closed with code ${code} reason ${reason}`)
+)
 shoukaku.on('disconnect', (name, count) => {
   console.warn(`[SHOUKAKU] Node ${name} disconnected. Players disconnected: ${count}`)
 })
@@ -60,7 +67,7 @@ client.on('voiceStateUpdate', (oldState, newState) => {
     shoukaku.leaveVoiceChannel(guild.id)
 
     // Emit event to notify server to stop playback
-    audioEvents.emit('allUsersLeft')
+    audioEvents.emit('allUsersLeft', guild.id)
   }
 })
 
@@ -73,26 +80,31 @@ export async function initBot() {
   return client
 }
 
-// Helper to get a player for a guild
-async function getPlayer(guildId: string) {
-  const node = shoukaku.options.nodeResolver(shoukaku.nodes)
-  if (!node) return null
-
-  const existingPlayer = shoukaku.players.get(guildId)
-  if (existingPlayer) return existingPlayer
-
-  // If no player, we need to join a channel first.
-  // This helper assumes we want to find an existing player.
-  return null
+interface PlayerState {
+  lastKnownPosition: number
+  lastUpdateTime: number
+  isPlaying: boolean
 }
 
-export async function playSong(url: string, guildId?: string) {
+const playerStates = new Map<string, PlayerState>()
+
+function getGuildState(guildId: string): PlayerState {
+  if (!playerStates.has(guildId)) {
+    playerStates.set(guildId, {
+      lastKnownPosition: 0,
+      lastUpdateTime: Date.now(),
+      isPlaying: false,
+    })
+  }
+  return playerStates.get(guildId)!
+}
+
+export async function playSong(url: string, guildId: string) {
   try {
-    const targetGuildId = '645090017609252875'
-    const guild = client.guilds.cache.get(targetGuildId)
+    const guild = client.guilds.cache.get(guildId)
 
     if (!guild) {
-      console.error(`[BOT ERROR] Guild ${targetGuildId} not found`)
+      console.error(`[BOT ERROR] Guild ${guildId} not found`)
       return
     }
 
@@ -110,7 +122,9 @@ export async function playSong(url: string, guildId?: string) {
 
     // If player exists but bot is not in a voice channel, destroy the stale player
     if (existingPlayer && !isInVoiceChannel) {
-      console.log('[BOT] Player exists but bot is not in voice channel. Destroying stale player...')
+      console.log(
+        `[BOT] Player exists but bot is not in voice channel in guild ${guildId}. Destroying stale player...`
+      )
       shoukaku.leaveVoiceChannel(guild.id)
       existingPlayer = undefined
     }
@@ -120,7 +134,9 @@ export async function playSong(url: string, guildId?: string) {
 
     // If no player or bot is not in a channel, join a voice channel
     if (!player || !voiceChannelId) {
-      console.log('[BOT] Bot is not in a voice channel. Finding a channel to join...')
+      console.log(
+        `[BOT] Bot is not in a voice channel in guild ${guildId}. Finding a channel to join...`
+      )
 
       // Find a voice channel with members
       const voiceChannel = guild.channels.cache.find(c => {
@@ -128,7 +144,9 @@ export async function playSong(url: string, guildId?: string) {
       })
 
       if (!voiceChannel) {
-        console.error('[BOT ERROR] No joinable voice channel with members found')
+        console.error(
+          `[BOT ERROR] No joinable voice channel with members found in guild ${guildId}`
+        )
         return
       }
 
@@ -144,18 +162,18 @@ export async function playSong(url: string, guildId?: string) {
 
       // Set up event listeners for new player
       player.on('start', () => {
-        console.log('[SHOUKAKU] Track started')
-        updatePlayerState(true, 0)
+        console.log(`[SHOUKAKU] Track started in guild ${guildId}`)
+        updatePlayerState(guildId, true, 0)
       })
 
       player.on('end', reason => {
-        console.log('[SHOUKAKU] Track ended. Reason:', reason)
-        updatePlayerState(false, 0)
-        audioEvents.emit('trackEnd', reason)
+        console.log(`[SHOUKAKU] Track ended in guild ${guildId}. Reason:`, reason)
+        updatePlayerState(guildId, false, 0)
+        audioEvents.emit('trackEnd', { guildId, reason })
       })
 
       player.on('exception', (err: any) => {
-        console.error('[SHOUKAKU ERROR] Track exception:', err)
+        console.error(`[SHOUKAKU ERROR] Track exception in guild ${guildId}:`, err)
       })
 
       console.log('[BOT] Successfully joined voice channel and created player')
@@ -268,7 +286,12 @@ export async function resolvePlaylist(url: string) {
 
     if (result.loadType === 'playlist') {
       const playlistData = result.data as any
-      console.log('[BOT] Playlist resolved:', playlistData.info?.name, '- Tracks:', playlistData.tracks?.length)
+      console.log(
+        '[BOT] Playlist resolved:',
+        playlistData.info?.name,
+        '- Tracks:',
+        playlistData.tracks?.length
+      )
       return {
         name: playlistData.info?.name || 'Unknown Playlist',
         tracks: playlistData.tracks || [],
@@ -283,71 +306,64 @@ export async function resolvePlaylist(url: string) {
   }
 }
 
-export async function pauseSong() {
-  const targetGuildId = '645090017609252875'
-  const player = shoukaku.players.get(targetGuildId)
+export async function pauseSong(guildId: string) {
+  const player = shoukaku.players.get(guildId)
   if (player) {
-    const currentPos = getPlayerPosition()
+    const currentPos = getPlayerPosition(guildId)
     player.setPaused(true)
     // Seek to current position to flush the buffer and stop audio instantly
     await player.update({ position: currentPos })
-    console.log('[SHOUKAKU] Player paused and seeked to flush buffer')
+    console.log(`[SHOUKAKU] Player paused and seeked to flush buffer in guild ${guildId}`)
   }
 }
 
-export async function resumeSong() {
-  const targetGuildId = '645090017609252875'
-  const player = shoukaku.players.get(targetGuildId)
+export async function resumeSong(guildId: string) {
+  const player = shoukaku.players.get(guildId)
   if (player) {
     player.setPaused(false)
-    console.log('[SHOUKAKU] Player resumed')
+    console.log(`[SHOUKAKU] Player resumed in guild ${guildId}`)
   }
 }
 
-export function stopSong() {
-  const targetGuildId = '645090017609252875'
-  const player = shoukaku.players.get(targetGuildId)
+export function stopSong(guildId: string) {
+  const player = shoukaku.players.get(guildId)
   if (player) {
     player.stopTrack()
-    console.log('[SHOUKAKU] Player stopped')
+    console.log(`[SHOUKAKU] Player stopped in guild ${guildId}`)
   }
 }
 
-export async function seekSong(position: number) {
-  const targetGuildId = '645090017609252875'
-  const player = shoukaku.players.get(targetGuildId)
+export async function seekSong(guildId: string, position: number) {
+  const player = shoukaku.players.get(guildId)
   if (player) {
     await player.update({ position })
     // Update our manual position tracking
-    updatePlayerState(isPlaying, position)
-    console.log('[SHOUKAKU] Player seeked to:', position)
+    updatePlayerState(guildId, true, position)
+    console.log(`[SHOUKAKU] Player seeked to: ${position} in guild ${guildId}`)
   }
 }
 
-let lastKnownPosition = 0
-let lastUpdateTime = Date.now()
-let isPlaying = false
-
-export function getPlayerPosition() {
-  const targetGuildId = '645090017609252875'
-  const player = shoukaku.players.get(targetGuildId)
+export function getPlayerPosition(guildId: string) {
+  const player = shoukaku.players.get(guildId)
+  const state = getGuildState(guildId)
   if (player) {
-    if (isPlaying) {
+    if (state.isPlaying) {
       // Calculate position based on time elapsed
-      const elapsed = Date.now() - lastUpdateTime
-      return lastKnownPosition + elapsed
+      const elapsed = Date.now() - state.lastUpdateTime
+      return state.lastKnownPosition + elapsed
     }
-    return lastKnownPosition
+    return state.lastKnownPosition
   }
   return 0
 }
 
-export function updatePlayerState(playing: boolean, position?: number) {
-  isPlaying = playing
+export function updatePlayerState(guildId: string, playing: boolean, position?: number) {
+  const state = getGuildState(guildId)
+  state.isPlaying = playing
   if (position !== undefined) {
-    lastKnownPosition = position
+    state.lastKnownPosition = position
   }
-  lastUpdateTime = Date.now()
+  state.lastUpdateTime = Date.now()
 }
 
 export const bot = client

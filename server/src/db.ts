@@ -1,5 +1,5 @@
+import { Database, open } from 'sqlite'
 import sqlite3 from 'sqlite3'
-import { open, Database } from 'sqlite'
 
 let db: Database
 
@@ -29,11 +29,19 @@ export async function initDB() {
       identifier TEXT,
       uri TEXT,
       order_index INTEGER,
+      guild_id TEXT,
       FOREIGN KEY(playlist_id) REFERENCES playlists(id)
     );
   `)
 
   // Migration for existing tables (simple check)
+  try {
+    await db.exec('ALTER TABLE songs ADD COLUMN guild_id TEXT')
+    console.log('Migrated songs table with guild_id')
+  } catch (e) {
+    // Column likely exists
+  }
+
   try {
     await db.exec('ALTER TABLE songs ADD COLUMN author TEXT')
     await db.exec('ALTER TABLE songs ADD COLUMN is_stream BOOLEAN')

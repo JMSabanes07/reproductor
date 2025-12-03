@@ -1,6 +1,6 @@
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { io, Socket } from 'socket.io-client'
-import type { Song, PlaybackState } from '../types'
+import type { PlaybackState, Song } from '../types'
 
 const SERVER_URL = import.meta.env.VITE_SERVER_URL || 'http://localhost:3000'
 
@@ -13,6 +13,7 @@ interface UseSocketReturn {
 }
 
 export function useSocket(
+  guildId: string | null,
   isSeekingRef: React.MutableRefObject<boolean>,
   setPlaybackState: React.Dispatch<React.SetStateAction<PlaybackState>>
 ): UseSocketReturn {
@@ -22,6 +23,8 @@ export function useSocket(
   const ignoreUpdatesUntilRef = useRef<number>(0)
 
   useEffect(() => {
+    if (!guildId) return
+
     console.log('[APP] Initializing Socket.io connection...')
     const newSocket = io(SERVER_URL)
     socketRef.current = newSocket
@@ -30,8 +33,8 @@ export function useSocket(
       console.log('[APP] Connected to server')
       console.log('[APP] Socket ID:', newSocket.id)
       setConnected(true)
-      console.log('[APP] Requesting playlist...')
-      newSocket.emit('get_playlist')
+      console.log(`[APP] Joining guild: ${guildId}`)
+      newSocket.emit('join_guild', guildId)
     })
 
     newSocket.on('connect_error', error => {
@@ -58,26 +61,33 @@ export function useSocket(
       setPlaybackState(prev => ({ ...prev, ...state }))
     })
 
-    newSocket.on('player_update', (update: { position: number; duration: number; status: string }) => {
-      // Ignore updates if we recently seeked (grace period)
-      if (Date.now() < ignoreUpdatesUntilRef.current) return
+    newSocket.on(
+      'player_update',
+      (update: { position: number; duration: number; status: string }) => {
+        // Ignore updates if we recently seeked (grace period)
+        if (Date.now() < ignoreUpdatesUntilRef.current) return
 
-      if (!isSeekingRef.current) {
-        setPlaybackState(prev => {
-          // Optimization: Don't update if values haven't changed (or changed very little)
-          if (prev.position === update.position && prev.duration === update.duration && prev.status === update.status) {
-            return prev
-          }
+        if (!isSeekingRef.current) {
+          setPlaybackState(prev => {
+            // Optimization: Don't update if values haven't changed (or changed very little)
+            if (
+              prev.position === update.position &&
+              prev.duration === update.duration &&
+              prev.status === update.status
+            ) {
+              return prev
+            }
 
-          return {
-            ...prev,
-            position: update.position,
-            duration: update.duration,
-            status: update.status as 'playing' | 'paused' | 'idle',
-          }
-        })
+            return {
+              ...prev,
+              position: update.position,
+              duration: update.duration,
+              status: update.status as 'playing' | 'paused' | 'idle',
+            }
+          })
+        }
       }
-    })
+    )
 
     newSocket.on('song_deleted', (id: number) => {
       console.log('[APP] Received song_deleted event for ID:', id)
@@ -88,7 +98,7 @@ export function useSocket(
       console.log('[APP] Cleaning up socket connection')
       newSocket.close()
     }
-  }, [setPlaybackState])
+  }, [setPlaybackState, guildId])
 
   return {
     socketRef,
