@@ -36,12 +36,12 @@ lavalink:
       rotation: true
       channelMix: true
       lowPass: true
-    bufferDurationMs: 600 # The duration of the audio buffer. Higher values mean more memory usage, but less chance of audio stuttering.
-    frameBufferDurationMs: 10000 # How many milliseconds of audio to keep buffered
-    opusEncodingQuality: 3 # Opus encoder quality. Valid values are 0-10, where 10 is best quality but is the most expensive on the CPU.
+    bufferDurationMs: 400 # The duration of the audio buffer. Higher values mean more memory usage, but less chance of audio stuttering.
+    frameBufferDurationMs: 5000 # How many milliseconds of audio to keep buffered
+    opusEncodingQuality: 0 # Opus encoder quality. Valid values are 0-10, where 10 is best quality but is the most expensive on the CPU.
     resamplingQuality: LOW # Quality of resampling operations. Valid values are LOW, MEDIUM, HIGH
     trackStuckThresholdMs: 10000 # The threshold for how long a track can be stuck before the TrackStuckEvent is fired.
-    useSeekGhosting: true # Seek ghosting allows for smoother seeking by serving the previous track's audio until the new track is ready.
+    useSeekGhosting: false # Seek ghosting allows for smoother seeking by serving the previous track's audio until the new track is ready.
     playerUpdateInterval: 5 # How frequently to send player updates to clients, in seconds
     youtubePlaylistLoadLimit: 50 # Number of pages to load for YouTube playlists. 0 means no limit.
     playerCleanupInterval: 0 # How frequently to remove players that have been destroyed, in seconds. 0 means never cleanup.
