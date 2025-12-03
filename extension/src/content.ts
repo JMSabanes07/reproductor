@@ -59,8 +59,9 @@ const PLUS_ICON = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" s
 const LIST_PLUS_ICON = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>`
 const SPINNER_ICON = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="spinner"><path d="M21 12a9 9 0 1 1-6.219-8.56"></path></svg>`
 const CHECK_ICON = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>`
+const X_ICON = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>`
 
-type ButtonState = 'idle' | 'loading' | 'success'
+type ButtonState = 'idle' | 'loading' | 'success' | 'error'
 
 function createButton(icon: string, onClick: () => void, primary = true) {
   const btn = document.createElement('button')
@@ -106,10 +107,14 @@ function updateButtonState(btn: HTMLButtonElement, state: ButtonState, originalI
     btn.innerHTML = CHECK_ICON
     btn.style.backgroundColor = '#43B581' // Green
     btn.style.opacity = '1'
+  } else if (state === 'error') {
+    btn.innerHTML = X_ICON
+    btn.style.backgroundColor = '#ED4245' // Red
+    btn.style.opacity = '1'
   } else {
     btn.innerHTML = originalIcon
     btn.style.opacity = '1'
-    btn.style.backgroundColor = originalIcon === PLUS_ICON ? '#5865F2' : 'rgba(255, 255, 255, 0.1)'
+    btn.style.backgroundColor = originalIcon === PLUS_ICON ? '#00d9d9' : 'rgba(255, 255, 255, 0.1)'
   }
 }
 
@@ -145,6 +150,10 @@ function addToDiscord(btn: HTMLButtonElement, originalIcon: string, isPlaylist =
 
   if (!socket.connected) {
     console.error('[CONTENT] Socket not connected!')
+    updateButtonState(btn, 'error', originalIcon)
+    setTimeout(() => {
+      updateButtonState(btn, 'idle', originalIcon)
+    }, 3000)
     return
   }
 

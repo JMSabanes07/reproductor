@@ -20,9 +20,6 @@ export default defineConfig({
       ],
     }),
   ],
-  define: {
-    'import.meta.env.VITE_SERVER_URL': JSON.stringify(process.env.VITE_SERVER_URL || 'http://localhost:3000'),
-  },
   build: {
     rollupOptions: {
       input: {
