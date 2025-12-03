@@ -5,9 +5,10 @@
 .sliderWrapper {
   position: relative;
   width: 100%;
-  height: 6px;
+  height: 8px;
   background: var(--background-tertiary);
-  border-radius: var(--radius-full);
+  border-radius: 0;
+  border: 2px solid var(--border);
 }
 
 .progressFill {
@@ -16,9 +17,10 @@
   left: 0;
   height: 100%;
   background: var(--primary);
-  border-radius: var(--radius-full);
+  border-radius: 0;
   pointer-events: none;
   transition: width 0.1s linear;
+  border-right: 2px solid var(--primary-dark);
 }
 
 .slider {
@@ -40,19 +42,20 @@
   appearance: none;
   width: 16px;
   height: 16px;
-  border-radius: var(--radius-full);
+  border-radius: 0;
   background: var(--primary);
   cursor: pointer;
   box-shadow: var(--shadow-md);
+  border: 2px solid var(--primary-dark);
 }
 
 .slider::-moz-range-thumb {
   width: 16px;
   height: 16px;
-  border-radius: var(--radius-full);
+  border-radius: 0;
   background: var(--primary);
   cursor: pointer;
-  border: none;
+  border: 2px solid var(--primary-dark);
   box-shadow: var(--shadow-md);
 }
 

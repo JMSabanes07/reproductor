@@ -1,4 +1,4 @@
-import { motion, AnimatePresence } from 'motion/react'
+import { AnimatePresence, motion } from 'motion/react'
 import css from './ConfirmModal.module.css'
 
 interface ConfirmModalProps {
@@ -23,7 +23,13 @@ export default function ConfirmModal({
   return (
     <AnimatePresence>
       {isOpen && (
-        <motion.div className={css.overlay} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onCancel}>
+        <motion.div
+          className={css.overlay}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          onClick={onCancel}
+        >
           <motion.div
             className={css.modal}
             initial={{ scale: 0.9, opacity: 0 }}
@@ -35,22 +41,12 @@ export default function ConfirmModal({
             <h2 className={css.title}>{title}</h2>
             <p className={css.message}>{message}</p>
             <div className={css.actions}>
-              <motion.button
-                className={css.cancelButton}
-                onClick={onCancel}
-                whileHover={{ scale: 1.05, backgroundColor: 'var(--surface-hover)' }}
-                whileTap={{ scale: 0.95 }}
-              >
+              <button className={css.cancelButton} onClick={onCancel}>
                 {cancelText}
-              </motion.button>
-              <motion.button
-                className={css.confirmButton}
-                onClick={onConfirm}
-                whileHover={{ scale: 1.05, backgroundColor: 'var(--secondary-dark)' }}
-                whileTap={{ scale: 0.95 }}
-              >
+              </button>
+              <button className={css.confirmButton} onClick={onConfirm}>
                 {confirmText}
-              </motion.button>
+              </button>
             </div>
           </motion.div>
         </motion.div>

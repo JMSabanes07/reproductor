@@ -20,7 +20,7 @@
   max-width: 85vw;
   width: 400px;
   box-shadow: var(--shadow-lg);
-  border: 1px solid var(--border);
+  border: 4px solid var(--border);
 }
 
 .title {
@@ -47,20 +47,44 @@
 .confirmButton {
   padding: 8px 16px;
   border-radius: var(--radius-md);
-  border: none;
+  border: 3px solid var(--border);
   font-size: 14px;
-  font-weight: 500;
+  font-weight: 600;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: none;
+  text-transform: uppercase;
 }
 
 .cancelButton {
   background: var(--surface);
   color: var(--text-primary);
-  border: 1px solid var(--border);
+  border-color: var(--border);
+}
+
+.cancelButton:hover {
+  background: var(--surface-hover);
+  transform: translate(-1px, -1px);
+  box-shadow: 3px 3px 0px var(--border-dark);
+}
+
+.cancelButton:active {
+  transform: translate(1px, 1px);
+  box-shadow: 1px 1px 0px var(--border-dark);
 }
 
 .confirmButton {
   background: var(--secondary);
-  color: white;
+  color: #fff;
+  border-color: var(--secondary-dark);
+}
+
+.confirmButton:hover {
+  background: var(--secondary-light);
+  transform: translate(-1px, -1px);
+  box-shadow: 3px 3px 0px var(--secondary-dark);
+}
+
+.confirmButton:active {
+  transform: translate(1px, 1px);
+  box-shadow: 1px 1px 0px var(--secondary-dark);
 }

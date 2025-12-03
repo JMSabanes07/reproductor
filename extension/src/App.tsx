@@ -86,35 +86,80 @@ function AppContent() {
 
   if (!guildId) {
     return (
-      <div
+      <motion.div
         className={css.container}
-        style={{ justifyContent: 'center', alignItems: 'center', gap: '1rem' }}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.3 }}
       >
-        <h2 style={{ color: 'white' }}>Enter Discord Server ID</h2>
-        <input
-          type="text"
-          placeholder="Guild ID"
-          onKeyDown={e => {
-            if (e.key === 'Enter') {
-              const val = e.currentTarget.value
-              if (val) {
-                localStorage.setItem('discord_guild_id', val)
-                chrome.storage.local.set({ discord_guild_id: val })
-                setGuildId(val)
+        <div className={css.guildIdContainer}>
+          <motion.img
+            src="/mikulogin.png"
+            alt="Miku Login"
+            width={180}
+            height={180}
+            initial={{ scale: 0.8, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ duration: 0.5, delay: 0.1 }}
+            style={{ borderRadius: '50%', marginBottom: '2rem' }}
+          />
+
+          <motion.h2
+            className={css.guildIdTitle}
+            initial={{ y: 20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ duration: 0.4, delay: 0.2 }}
+          >
+            Ingresá el ID del servidor de Discord
+          </motion.h2>
+
+          <motion.input
+            type="text"
+            placeholder="Guild ID"
+            className={css.guildIdInput}
+            id="guildIdInput"
+            initial={{ y: 20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ duration: 0.4, delay: 0.3 }}
+            onKeyDown={e => {
+              if (e.key === 'Enter') {
+                const val = e.currentTarget.value
+                if (val) {
+                  localStorage.setItem('discord_guild_id', val)
+                  chrome.storage.local.set({ discord_guild_id: val })
+                  setGuildId(val)
+                }
               }
-            }
-          }}
-          style={{
-            padding: '10px',
-            borderRadius: '5px',
-            border: 'none',
-            width: '80%',
-            backgroundColor: 'rgba(255, 255, 255, 0.1)',
-            color: 'white',
-          }}
-        />
-        <p style={{ color: '#aaa', fontSize: '0.8rem' }}>Press Enter to save</p>
-      </div>
+            }}
+          />
+
+          <motion.button
+            className={css.guildIdButton}
+            initial={{ y: 20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ duration: 0.4, delay: 0.4 }}
+            onClick={() => {
+              const input = document.getElementById('guildIdInput') as HTMLInputElement
+              if (input?.value) {
+                localStorage.setItem('discord_guild_id', input.value)
+                chrome.storage.local.set({ discord_guild_id: input.value })
+                setGuildId(input.value)
+              }
+            }}
+          >
+            Ingresar
+          </motion.button>
+
+          <motion.p
+            className={css.guildIdHint}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.4, delay: 0.5 }}
+          >
+            Activa el Modo Desarrollador en Discord → Click derecho en el servidor → Copiar ID
+          </motion.p>
+        </div>
+      </motion.div>
     )
   }
 
@@ -126,11 +171,10 @@ function AppContent() {
       <div className={css.songPreview}>
         {playbackState.currentSong ? (
           <>
-            <motion.img
+            <img
               className={css.songThumbnail}
-              src={playbackState.currentSong.thumbnail || 'https://via.placeholder.com/200'}
+              src={playbackState.currentSong.thumbnail || '/mikuwaiting.png'}
               alt={playbackState.currentSong.title}
-              whileHover={{ scale: 1.05, boxShadow: '0 20px 40px rgba(0, 0, 0, 0.3)' }}
             />
             <div className={css.songInfo}>
               <h2 className={css.songTitle}>{playbackState.currentSong.title}</h2>
@@ -139,8 +183,10 @@ function AppContent() {
           </>
         ) : (
           <>
-            <div className={css.songThumbnailPlaceholder} />
-            <h2 className={css.songTitle}>No song playing</h2>
+            <img className={css.songThumbnail} src="/mikuwaiting.png" alt="Miku Waiting" />
+            <h2 className={css.songTitleWaiting}>
+              Miku esta esperando a que reproduzcas una canción
+            </h2>
           </>
         )}
       </div>

@@ -16,8 +16,7 @@
   width: 400px;
   max-width: 85vw;
   height: 100vh;
-  box-shadow: var(--shadow-xl);
-  /* border-right: 1px solid var(--border); */
+  box-shadow: 8px 8px 0px var(--border-dark);
   display: flex;
   flex-direction: column;
   backdrop-filter: blur(8px);
@@ -40,8 +39,8 @@
 }
 
 .closeButton {
-  background: none;
-  border: none;
+  background: var(--surface);
+  border: 2px solid var(--border);
   cursor: pointer;
   padding: 8px;
   display: flex;
@@ -49,6 +48,19 @@
   justify-content: center;
   border-radius: var(--radius-md);
   color: var(--text-secondary);
+  transition: none;
+}
+
+.closeButton:hover {
+  background: var(--secondary);
+  color: var(--text-inverse);
+  border-color: var(--secondary-dark);
+  box-shadow: 3px 3px 0px var(--border-dark);
+}
+
+.closeButton:active {
+  transform: translate(1px, 1px);
+  box-shadow: 1px 1px 0px var(--border-dark);
 }
 
 .drawerContent {

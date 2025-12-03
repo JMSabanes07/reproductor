@@ -19,8 +19,9 @@
   text-align: center;
   background: var(--background-secondary);
   border-radius: var(--radius-lg);
-  border: 2px dashed var(--border);
+  border: 4px dashed var(--border);
   margin: 16px;
+  box-shadow: var(--shadow-md);
 }
 
 .emptyStateText {

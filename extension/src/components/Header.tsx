@@ -1,5 +1,4 @@
-import { motion } from 'motion/react'
-import { Menu as MenuIcon, Sun, Moon } from 'lucide-react'
+import { MenuIcon, MoonIcon, SunDimIcon } from 'raster-react'
 import { useTheme } from '../contexts/ThemeContext'
 import css from './Header.module.css'
 
@@ -14,29 +13,25 @@ export default function Header({ connected, onMenuClick }: HeaderProps) {
   return (
     <header className={css.header}>
       <div className={css.headerLeft}>
+        <img src="/mikuicon.png" alt="Miku Icon" />
         <h1 className={css.title}>Miku Player</h1>
       </div>
       <div className={css.headerRight}>
-        <div className={`${css.statusIndicator} ${connected ? css.connected : css.disconnected}`} title={connected ? 'Connected' : 'Disconnected'} />
-        <motion.button
+        <div
+          className={`${css.statusIndicator} ${connected ? css.connected : css.disconnected}`}
+          title={connected ? 'Connected' : 'Disconnected'}
+        />
+        <button
           className={css.themeButton}
           onClick={toggleTheme}
           title={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}
-          whileHover={{ scale: 1.05, backgroundColor: 'var(--surface-hover)', color: 'var(--primary)' }}
-          whileTap={{ scale: 0.95 }}
         >
-          {theme === 'light' ? <Moon size={20} /> : <Sun size={20} />}
-        </motion.button>
+          {theme === 'light' ? <MoonIcon size={24} /> : <SunDimIcon size={24} />}
+        </button>
 
-        <motion.button
-          className={css.menuButton}
-          onClick={onMenuClick}
-          title="Menu"
-          whileHover={{ scale: 1.05, backgroundColor: 'var(--surface-hover)', color: 'var(--primary)' }}
-          whileTap={{ scale: 0.95 }}
-        >
-          <MenuIcon size={20} />
-        </motion.button>
+        <button className={css.menuButton} onClick={onMenuClick} title="Menu">
+          <MenuIcon size={24} />
+        </button>
       </div>
     </header>
   )
