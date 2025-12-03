@@ -3,7 +3,7 @@
   "name": "Discord Music Player Extension",
   "version": "1.0.0",
   "description": "Add music to Discord bot from YouTube",
-  "permissions": ["activeTab", "scripting", "storage"],
+  "permissions": ["activeTab", "storage"],
   "host_permissions": ["*://*.youtube.com/*"],
   "icons": {
     "16": "assets/miku16.png",
