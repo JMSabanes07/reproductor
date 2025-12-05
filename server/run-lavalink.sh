@@ -1,3 +1,3 @@
 #!/bin/bash
-cd lavalink
-java -jar Lavalink.jar
+cd nodelink
+npm run start

@@ -8,12 +8,7 @@ dotenv.config()
 export const audioEvents = new EventEmitter()
 
 const client = new Client({
-  intents: [
-    GatewayIntentBits.Guilds,
-    GatewayIntentBits.GuildVoiceStates,
-    GatewayIntentBits.GuildMessages,
-    GatewayIntentBits.MessageContent,
-  ],
+  intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildVoiceStates, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent],
 })
 
 const Nodes = [
@@ -28,9 +23,7 @@ const shoukaku = new Shoukaku(new Connectors.DiscordJS(client), Nodes)
 
 shoukaku.on('error', (_, error) => console.error('[SHOUKAKU ERROR]', error))
 shoukaku.on('ready', name => console.log(`[SHOUKAKU] Node ${name} is ready`))
-shoukaku.on('close', (name, code, reason) =>
-  console.warn(`[SHOUKAKU] Node ${name} closed with code ${code} reason ${reason}`)
-)
+shoukaku.on('close', (name, code, reason) => console.warn(`[SHOUKAKU] Node ${name} closed with code ${code} reason ${reason}`))
 shoukaku.on('disconnect', (name, count) => {
   console.warn(`[SHOUKAKU] Node ${name} disconnected. Players disconnected: ${count}`)
 })
@@ -122,9 +115,7 @@ export async function playSong(url: string, guildId: string) {
 
     // If player exists but bot is not in a voice channel, destroy the stale player
     if (existingPlayer && !isInVoiceChannel) {
-      console.log(
-        `[BOT] Player exists but bot is not in voice channel in guild ${guildId}. Destroying stale player...`
-      )
+      console.log(`[BOT] Player exists but bot is not in voice channel in guild ${guildId}. Destroying stale player...`)
       shoukaku.leaveVoiceChannel(guild.id)
       existingPlayer = undefined
     }
@@ -134,9 +125,7 @@ export async function playSong(url: string, guildId: string) {
 
     // If no player or bot is not in a channel, join a voice channel
     if (!player || !voiceChannelId) {
-      console.log(
-        `[BOT] Bot is not in a voice channel in guild ${guildId}. Finding a channel to join...`
-      )
+      console.log(`[BOT] Bot is not in a voice channel in guild ${guildId}. Finding a channel to join...`)
 
       // Find a voice channel with members
       const voiceChannel = guild.channels.cache.find(c => {
@@ -144,9 +133,7 @@ export async function playSong(url: string, guildId: string) {
       })
 
       if (!voiceChannel) {
-        console.error(
-          `[BOT ERROR] No joinable voice channel with members found in guild ${guildId}`
-        )
+        console.error(`[BOT ERROR] No joinable voice channel with members found in guild ${guildId}`)
         return
       }
 
@@ -174,6 +161,16 @@ export async function playSong(url: string, guildId: string) {
 
       player.on('exception', (err: any) => {
         console.error(`[SHOUKAKU ERROR] Track exception in guild ${guildId}:`, err)
+      })
+
+      player.on('stuck', (data: any) => {
+        console.warn(`[SHOUKAKU] Track stuck in guild ${guildId}:`, data)
+        audioEvents.emit('trackStuck', { guildId, data })
+      })
+
+      player.on('update', (data: any) => {
+        // console.log(`[SHOUKAKU] Player update in guild ${guildId}:`, data)
+        updatePlayerState(guildId, data.state.connected, data.state.position)
       })
 
       console.log('[BOT] Successfully joined voice channel and created player')
@@ -286,12 +283,7 @@ export async function resolvePlaylist(url: string) {
 
     if (result.loadType === 'playlist') {
       const playlistData = result.data as any
-      console.log(
-        '[BOT] Playlist resolved:',
-        playlistData.info?.name,
-        '- Tracks:',
-        playlistData.tracks?.length
-      )
+      console.log('[BOT] Playlist resolved:', playlistData.info?.name, '- Tracks:', playlistData.tracks?.length)
       return {
         name: playlistData.info?.name || 'Unknown Playlist',
         tracks: playlistData.tracks || [],
@@ -310,10 +302,10 @@ export async function pauseSong(guildId: string) {
   const player = shoukaku.players.get(guildId)
   if (player) {
     const currentPos = getPlayerPosition(guildId)
-    player.setPaused(true)
-    // Seek to current position to flush the buffer and stop audio instantly
-    await player.update({ position: currentPos })
-    console.log(`[SHOUKAKU] Player paused and seeked to flush buffer in guild ${guildId}`)
+    // Only pause, do not seek as it might trigger resume in NodeLink
+    await player.setPaused(true)
+    updatePlayerState(guildId, false, currentPos)
+    console.log(`[SHOUKAKU] Player paused in guild ${guildId}`)
   }
 }
 
@@ -321,6 +313,7 @@ export async function resumeSong(guildId: string) {
   const player = shoukaku.players.get(guildId)
   if (player) {
     player.setPaused(false)
+    updatePlayerState(guildId, true)
     console.log(`[SHOUKAKU] Player resumed in guild ${guildId}`)
   }
 }
