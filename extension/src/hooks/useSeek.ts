@@ -30,9 +30,6 @@ export function useSeek(
 
       // Optimistic update
       setPlaybackState(prev => ({ ...prev, position: seekValue }))
-
-      // Ignore server updates for 2 seconds to allow seek to settle
-      ignoreUpdatesUntilRef.current = Date.now() + 2000
     }
     setIsSeeking(false)
   }

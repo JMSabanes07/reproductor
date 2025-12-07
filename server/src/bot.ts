@@ -170,7 +170,9 @@ export async function playSong(url: string, guildId: string) {
 
       player.on('update', (data: any) => {
         // console.log(`[SHOUKAKU] Player update in guild ${guildId}:`, data)
-        updatePlayerState(guildId, data.state.connected, data.state.position)
+        if (player) {
+          updatePlayerState(guildId, !player.paused, data.state.position)
+        }
       })
 
       console.log('[BOT] Successfully joined voice channel and created player')
@@ -335,10 +337,17 @@ export async function seekSong(guildId: string, position: number) {
     // Atomically update position and paused state
     await player.update({ position, paused: shouldBePaused })
 
+    // Double check: Force pause if it should be paused, to be absolutely sure
+    if (shouldBePaused) {
+      await player.setPaused(true)
+    }
+
     // Update our manual position tracking
     updatePlayerState(guildId, !shouldBePaused, position)
     console.log(`[SHOUKAKU] Player seeked to: ${position} in guild ${guildId}. Should be paused: ${shouldBePaused}`)
+    return shouldBePaused
   }
+  return false
 }
 
 export function getPlayerPosition(guildId: string) {

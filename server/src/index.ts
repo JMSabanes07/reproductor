@@ -67,18 +67,12 @@ function getGuildSession(guildId: string): GuildSession {
   return guildSessions.get(guildId)!
 }
 
-function getNextSong(
-  songs: any[],
-  currentSongId: number | null,
-  session: GuildSession
-): any | null {
+function getNextSong(songs: any[], currentSongId: number | null, session: GuildSession): any | null {
   if (songs.length === 0) return null
 
   if (session.playbackState.isShuffle) {
     // Filter out played indices
-    const availableIndices = songs
-      .map((_, i) => i)
-      .filter(i => !session.shuffledPlayedIndices.includes(i))
+    const availableIndices = songs.map((_, i) => i).filter(i => !session.shuffledPlayedIndices.includes(i))
 
     if (availableIndices.length === 0) {
       // All played.
@@ -161,10 +155,7 @@ audioEvents.on('trackEnd', async ({ guildId, reason }) => {
   try {
     const db = getDB()
     // Get all songs ordered by order_index ASC (FIFO) for this guild
-    const songs = await db.all(
-      'SELECT * FROM songs WHERE guild_id = ? ORDER BY order_index ASC',
-      guildId
-    )
+    const songs = await db.all('SELECT * FROM songs WHERE guild_id = ? ORDER BY order_index ASC', guildId)
 
     if (songs.length === 0) {
       console.log('[QUEUE] Playlist empty.')
@@ -256,10 +247,7 @@ io.on('connection', socket => {
         console.log('[SOCKET] Fetching playlist for client:', socket.id)
         const db = getDB()
         // FIFO Order
-        const songs = await db.all(
-          'SELECT * FROM songs WHERE guild_id = ? ORDER BY order_index ASC',
-          guildId
-        )
+        const songs = await db.all('SELECT * FROM songs WHERE guild_id = ? ORDER BY order_index ASC', guildId)
         console.log('[SOCKET] Sending', songs.length, 'songs to client:', socket.id)
         socket.emit('playlist_updated', songs)
 
@@ -280,10 +268,7 @@ io.on('connection', socket => {
     const sendPlaylist = async () => {
       try {
         const db = getDB()
-        const songs = await db.all(
-          'SELECT * FROM songs WHERE guild_id = ? ORDER BY order_index ASC',
-          currentGuildId
-        )
+        const songs = await db.all('SELECT * FROM songs WHERE guild_id = ? ORDER BY order_index ASC', currentGuildId)
         socket.emit('playlist_updated', songs)
       } catch (error) {
         console.error('[SOCKET ERROR] Failed to fetch playlist:', error)
@@ -339,28 +324,12 @@ io.on('connection', socket => {
       console.log('[DB] Inserting song into database...')
       const db = getDB()
       // Get max order_index
-      const maxOrderResult = await db.get(
-        'SELECT MAX(order_index) as maxOrder FROM songs WHERE guild_id = ?',
-        currentGuildId
-      )
+      const maxOrderResult = await db.get('SELECT MAX(order_index) as maxOrder FROM songs WHERE guild_id = ?', currentGuildId)
       const nextOrderIndex = (maxOrderResult?.maxOrder || 0) + 1
 
       const result = await db.run(
         'INSERT INTO songs (title, url, thumbnail, duration, added_by, author, is_stream, source_name, identifier, uri, order_index, guild_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-        [
-          finalTitle,
-          uri,
-          finalThumbnail,
-          finalDuration,
-          added_by,
-          author,
-          isStream,
-          sourceName,
-          identifier,
-          uri,
-          nextOrderIndex,
-          currentGuildId,
-        ]
+        [finalTitle, uri, finalThumbnail, finalDuration, added_by, author, isStream, sourceName, identifier, uri, nextOrderIndex, currentGuildId]
       )
 
       const newSong = {
@@ -405,10 +374,7 @@ io.on('connection', socket => {
       console.log('[SOCKET] add_song completed successfully')
     } catch (error) {
       console.error('[SOCKET ERROR] Failed to add song:', error)
-      console.error(
-        '[SOCKET ERROR] Error stack:',
-        error instanceof Error ? error.stack : 'No stack trace'
-      )
+      console.error('[SOCKET ERROR] Error stack:', error instanceof Error ? error.stack : 'No stack trace')
     }
   })
 
@@ -433,21 +399,10 @@ io.on('connection', socket => {
         return
       }
 
-      console.log(
-        '[PLAYLIST] Processing playlist:',
-        playlistResult.name,
-        '- Tracks:',
-        playlistResult.tracks.length
-      )
+      console.log('[PLAYLIST] Processing playlist:', playlistResult.name, '- Tracks:', playlistResult.tracks.length)
 
       const db = getDB()
-      let currentOrderIndex =
-        (
-          await db.get(
-            'SELECT MAX(order_index) as maxOrder FROM songs WHERE guild_id = ?',
-            currentGuildId
-          )
-        )?.maxOrder || 0
+      let currentOrderIndex = (await db.get('SELECT MAX(order_index) as maxOrder FROM songs WHERE guild_id = ?', currentGuildId))?.maxOrder || 0
 
       let successCount = 0
       let failCount = 0
@@ -519,15 +474,10 @@ io.on('connection', socket => {
         }
       }
 
-      console.log(
-        `[SOCKET] import_playlist completed - Success: ${successCount}, Failed: ${failCount}`
-      )
+      console.log(`[SOCKET] import_playlist completed - Success: ${successCount}, Failed: ${failCount}`)
     } catch (error) {
       console.error('[SOCKET ERROR] Playlist import error:', error)
-      console.error(
-        '[SOCKET ERROR] Error stack:',
-        error instanceof Error ? error.stack : 'No stack trace'
-      )
+      console.error('[SOCKET ERROR] Error stack:', error instanceof Error ? error.stack : 'No stack trace')
     }
   })
 
@@ -570,10 +520,7 @@ io.on('connection', socket => {
       // If idle, play the first song in the queue
       try {
         const db = getDB()
-        const songs = await db.all(
-          'SELECT * FROM songs WHERE guild_id = ? ORDER BY order_index ASC LIMIT 1',
-          currentGuildId
-        )
+        const songs = await db.all('SELECT * FROM songs WHERE guild_id = ? ORDER BY order_index ASC LIMIT 1', currentGuildId)
         if (songs.length > 0) {
           const firstSong = songs[0]
           console.log('[PLAYBACK] Idle resume, playing first song:', firstSong.title)
@@ -663,9 +610,12 @@ io.on('connection', socket => {
   socket.on('seek_song', async (position: number) => {
     if (!currentGuildId) return
     console.log('[SOCKET] Received seek_song event:', position)
-    await seekSong(currentGuildId, position)
+    const isPaused = await seekSong(currentGuildId, position)
     const session = getGuildSession(currentGuildId)
     session.playbackState.position = position
+    // Update status based on seek result
+    session.playbackState.status = isPaused ? 'paused' : 'playing'
+
     // Immediate update to all clients to reflect seek
     io.to(currentGuildId).emit('player_update', {
       position: session.playbackState.position,
@@ -674,6 +624,8 @@ io.on('connection', socket => {
       isShuffle: session.playbackState.isShuffle,
       isRepeat: session.playbackState.isRepeat,
     })
+    // Also emit full playback state to ensure UI sync
+    io.to(currentGuildId).emit('playback_state', session.playbackState)
   })
 
   socket.on('delete_song', async (id: number) => {
@@ -686,10 +638,7 @@ io.on('connection', socket => {
 
       // Refresh playlist for everyone
       const db = getDB()
-      const songs = await db.all(
-        'SELECT * FROM songs WHERE guild_id = ? ORDER BY order_index ASC',
-        currentGuildId
-      )
+      const songs = await db.all('SELECT * FROM songs WHERE guild_id = ? ORDER BY order_index ASC', currentGuildId)
       io.to(currentGuildId).emit('playlist_updated', songs)
     } catch (error) {
       console.error('[SOCKET ERROR] Failed to delete song:', error)
@@ -714,10 +663,7 @@ io.on('connection', socket => {
       console.log('[DB] Playlist reordered successfully')
 
       // Broadcast new order
-      const songs = await db.all(
-        'SELECT * FROM songs WHERE guild_id = ? ORDER BY order_index ASC',
-        currentGuildId
-      )
+      const songs = await db.all('SELECT * FROM songs WHERE guild_id = ? ORDER BY order_index ASC', currentGuildId)
       io.to(currentGuildId).emit('playlist_updated', songs)
     } catch (error) {
       console.error('[SOCKET ERROR] Failed to reorder playlist:', error)
