@@ -329,16 +329,15 @@ export function stopSong(guildId: string) {
 export async function seekSong(guildId: string, position: number) {
   const player = shoukaku.players.get(guildId)
   if (player) {
-    const wasPaused = player.paused
-    await player.update({ position })
+    const state = getGuildState(guildId)
+    const shouldBePaused = !state.isPlaying
 
-    if (wasPaused) {
-      await player.setPaused(true)
-    }
+    // Atomically update position and paused state
+    await player.update({ position, paused: shouldBePaused })
 
     // Update our manual position tracking
-    updatePlayerState(guildId, !wasPaused, position)
-    console.log(`[SHOUKAKU] Player seeked to: ${position} in guild ${guildId}. Preserving paused state: ${wasPaused}`)
+    updatePlayerState(guildId, !shouldBePaused, position)
+    console.log(`[SHOUKAKU] Player seeked to: ${position} in guild ${guildId}. Should be paused: ${shouldBePaused}`)
   }
 }
 
