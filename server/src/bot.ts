@@ -331,6 +331,7 @@ export function stopSong(guildId: string) {
 export async function seekSong(guildId: string, position: number) {
   console.log(`[DEBUG] seekSong called for guild ${guildId}, position: ${position}`)
   const player = shoukaku.players.get(guildId)
+  console.log('player: ', player)
   if (player) {
     const state = getGuildState(guildId)
     const shouldBePaused = !state.isPlaying
