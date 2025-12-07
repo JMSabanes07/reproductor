@@ -611,10 +611,13 @@ io.on('connection', socket => {
     if (!currentGuildId) return
     console.log('[SOCKET] Received seek_song event:', position)
     const isPaused = await seekSong(currentGuildId, position)
+    console.log(`[DEBUG] seekSong returned isPaused: ${isPaused}`)
+
     const session = getGuildSession(currentGuildId)
     session.playbackState.position = position
     // Update status based on seek result
     session.playbackState.status = isPaused ? 'paused' : 'playing'
+    console.log(`[DEBUG] Updated session status to: ${session.playbackState.status}`)
 
     // Immediate update to all clients to reflect seek
     io.to(currentGuildId).emit('player_update', {
@@ -624,8 +627,11 @@ io.on('connection', socket => {
       isShuffle: session.playbackState.isShuffle,
       isRepeat: session.playbackState.isRepeat,
     })
+    console.log('[DEBUG] Emitted player_update')
+
     // Also emit full playback state to ensure UI sync
     io.to(currentGuildId).emit('playback_state', session.playbackState)
+    console.log('[DEBUG] Emitted playback_state')
   })
 
   socket.on('delete_song', async (id: number) => {

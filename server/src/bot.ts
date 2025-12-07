@@ -329,27 +329,33 @@ export function stopSong(guildId: string) {
 }
 
 export async function seekSong(guildId: string, position: number) {
+  console.log(`[DEBUG] seekSong called for guild ${guildId}, position: ${position}`)
   const player = shoukaku.players.get(guildId)
   if (player) {
     const state = getGuildState(guildId)
     const shouldBePaused = !state.isPlaying
+    console.log(`[DEBUG] Current local state isPlaying: ${state.isPlaying}, shouldBePaused: ${shouldBePaused}`)
 
     // Nuclear option: Force pause at every step if needed
     if (shouldBePaused) {
+      console.log('[DEBUG] Step 1: Pre-seek pause')
       await player.setPaused(true)
     }
 
     // Atomically update position and paused state
+    console.log(`[DEBUG] Step 2: Calling player.update with position: ${position}, paused: ${shouldBePaused}`)
     await player.update({ position, paused: shouldBePaused })
 
     // Double check: Force pause if it should be paused
     if (shouldBePaused) {
+      console.log('[DEBUG] Step 3: Post-seek immediate pause')
       await player.setPaused(true)
 
       // Triple check: Some Lavalink nodes (like NodeLink) might auto-resume after seek
       // We force pause again after a short delay to override any auto-resume
       setTimeout(async () => {
         if (player) {
+          console.log('[DEBUG] Step 4: Delayed pause check (100ms)')
           await player.setPaused(true)
           updatePlayerState(guildId, false, position)
         }
@@ -361,6 +367,7 @@ export async function seekSong(guildId: string, position: number) {
     console.log(`[SHOUKAKU] Player seeked to: ${position} in guild ${guildId}. Should be paused: ${shouldBePaused}`)
     return shouldBePaused
   }
+  console.warn(`[DEBUG] Player not found for guild ${guildId}`)
   return false
 }
 
@@ -379,6 +386,7 @@ export function getPlayerPosition(guildId: string) {
 }
 
 export function updatePlayerState(guildId: string, playing: boolean, position?: number) {
+  console.log(`[DEBUG] updatePlayerState called for guild ${guildId}. playing: ${playing}, position: ${position}`)
   const state = getGuildState(guildId)
   state.isPlaying = playing
   if (position !== undefined) {
