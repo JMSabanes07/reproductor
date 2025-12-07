@@ -28,7 +28,7 @@ export function useSeek(
       socketRef.current.emit('seek_song', seekValue)
 
       // Optimistic update
-      setPlaybackState(prev => ({ ...prev, position: seekValue }))
+      setPlaybackState(prev => ({ ...prev, position: seekValue, status: 'playing' }))
     }
     setIsSeeking(false)
   }

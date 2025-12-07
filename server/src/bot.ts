@@ -329,55 +329,17 @@ export function stopSong(guildId: string) {
 }
 
 export async function seekSong(guildId: string, position: number) {
-  console.log(`[DEBUG] seekSong called for guild ${guildId}, position: ${position}`)
   const player = shoukaku.players.get(guildId)
-  console.log('player: ', player)
   if (player) {
-    const state = getGuildState(guildId)
-    const shouldBePaused = !state.isPlaying
-    console.log(`[DEBUG] Current local state isPlaying: ${state.isPlaying}, shouldBePaused: ${shouldBePaused}`)
+    // Just seek and ensure it plays (since NodeLink auto-resumes on seek usually)
+    // We explicitly set paused: false to be sure
+    await player.update({ position, paused: false })
 
-    // Nuclear option: Force pause at every step if needed
-    if (shouldBePaused) {
-      console.log('[DEBUG] Step 1: Pre-seek pause')
-      await player.setPaused(true)
-    }
-
-    // Use playTrack instead of update to enforce state
-    console.log(`[DEBUG] Step 2: Calling player.playTrack with position: ${position}, paused: ${shouldBePaused}`)
-    if (player.track) {
-      await player.playTrack({
-        track: { encoded: player.track },
-        position: position,
-        paused: shouldBePaused,
-      })
-    } else {
-      console.warn('[DEBUG] No track found in player, falling back to update')
-      await player.update({ position, paused: shouldBePaused })
-    }
-
-    // Double check: Force pause if it should be paused
-    if (shouldBePaused) {
-      console.log('[DEBUG] Step 3: Post-seek immediate pause')
-      await player.setPaused(true)
-
-      // Triple check: Some Lavalink nodes (like NodeLink) might auto-resume after seek
-      // We force pause again after a short delay to override any auto-resume
-      setTimeout(async () => {
-        if (player) {
-          console.log('[DEBUG] Step 4: Delayed pause check (100ms)')
-          await player.setPaused(true)
-          updatePlayerState(guildId, false, position)
-        }
-      }, 100)
-    }
-
-    // Update our manual position tracking
-    updatePlayerState(guildId, !shouldBePaused, position)
-    console.log(`[SHOUKAKU] Player seeked to: ${position} in guild ${guildId}. Should be paused: ${shouldBePaused}`)
-    return shouldBePaused
+    // Update our manual position tracking to playing
+    updatePlayerState(guildId, true, position)
+    console.log(`[SHOUKAKU] Player seeked to: ${position} in guild ${guildId}. State set to playing.`)
+    return false // isPaused = false
   }
-  console.warn(`[DEBUG] Player not found for guild ${guildId}`)
   return false
 }
 
