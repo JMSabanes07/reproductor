@@ -3,8 +3,7 @@
   "name": "Hatsune Miku Discord Player",
   "version": "1.0.0",
   "description": "Add music to Discord bot from YouTube",
-  "permissions": ["activeTab", "storage"],
-  "host_permissions": ["*://*.youtube.com/*"],
+  "permissions": ["storage"],
   "icons": {
     "16": "assets/miku16.png",
     "32": "assets/miku32.png",
