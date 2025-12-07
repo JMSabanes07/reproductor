@@ -334,12 +334,18 @@ export async function seekSong(guildId: string, position: number) {
     const state = getGuildState(guildId)
     const shouldBePaused = !state.isPlaying
 
+    // Nuclear option: Force pause at every step if needed
+    if (shouldBePaused) {
+      await player.setPaused(true)
+    }
+
     // Atomically update position and paused state
     await player.update({ position, paused: shouldBePaused })
 
-    // Double check: Force pause if it should be paused, to be absolutely sure
+    // Double check: Force pause if it should be paused
     if (shouldBePaused) {
       await player.setPaused(true)
+
       // Triple check: Some Lavalink nodes (like NodeLink) might auto-resume after seek
       // We force pause again after a short delay to override any auto-resume
       setTimeout(async () => {
