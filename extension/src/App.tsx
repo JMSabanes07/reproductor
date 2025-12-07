@@ -26,8 +26,7 @@ function AppContent() {
   // Load guild_id on mount
   useEffect(() => {
     chrome.storage.local.get(['discord_guild_id'], result => {
-      const storedGuildId =
-        (result.discord_guild_id as string) || localStorage.getItem('discord_guild_id')
+      const storedGuildId = (result.discord_guild_id as string) || localStorage.getItem('discord_guild_id')
       if (storedGuildId) {
         setGuildId(storedGuildId)
         // Sync to both storages
@@ -55,28 +54,13 @@ function AppContent() {
   })
   const isSeekingRef = useRef(false)
 
-  const { socketRef, connected, playlist, ignoreUpdatesUntilRef, setPlaylist } = useSocket(
-    guildId,
-    isSeekingRef,
-    setPlaybackState
-  )
+  const { socketRef, connected, playlist, ignoreUpdatesUntilRef, setPlaylist } = useSocket(guildId, isSeekingRef, setPlaybackState)
 
-  const showConfirm = (
-    title: string,
-    message: string,
-    confirmText: string,
-    cancelText: string,
-    onConfirm: () => void
-  ) => {
+  const showConfirm = (title: string, message: string, confirmText: string, cancelText: string, onConfirm: () => void) => {
     setConfirmModal({ isOpen: true, title, message, confirmText, cancelText, onConfirm })
   }
 
-  const playbackActions = usePlayback(
-    socketRef,
-    setPlaybackState,
-    ignoreUpdatesUntilRef,
-    showConfirm
-  )
+  const playbackActions = usePlayback(socketRef, setPlaybackState, ignoreUpdatesUntilRef, showConfirm)
   const seekControls = useSeek(socketRef, playbackState, ignoreUpdatesUntilRef, setPlaybackState)
 
   // Sync isSeeking state to ref for socket updates
@@ -86,12 +70,7 @@ function AppContent() {
 
   if (!guildId) {
     return (
-      <motion.div
-        className={css.container}
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 0.3 }}
-      >
+      <motion.div className={css.container} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.3 }}>
         <div className={css.guildIdContainer}>
           <motion.img
             src="/mikulogin.png"
@@ -150,12 +129,7 @@ function AppContent() {
             Ingresar
           </motion.button>
 
-          <motion.p
-            className={css.guildIdHint}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.4, delay: 0.5 }}
-          >
+          <motion.p className={css.guildIdHint} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.4, delay: 0.5 }}>
             Activa el Modo Desarrollador en Discord → Click derecho en el servidor → Copiar ID
           </motion.p>
         </div>
@@ -184,9 +158,7 @@ function AppContent() {
         ) : (
           <>
             <img className={css.songThumbnail} src="/mikuwaiting.png" alt="Miku Waiting" />
-            <h2 className={css.songTitleWaiting}>
-              Miku esta esperando a que reproduzcas una canción
-            </h2>
+            <h2 className={css.songTitleWaiting}>Miku esta esperando a que reproduzcas una canción</h2>
           </>
         )}
       </div>
@@ -214,15 +186,9 @@ function AppContent() {
 
       <Menu
         onClearPlaylist={() => {
-          showConfirm(
-            'Limpiar Playlist',
-            '¿Estas seguro de borrar toda la playlist?',
-            'Limpiar',
-            'Cancelar',
-            () => {
-              socketRef.current?.emit('clear_playlist')
-            }
-          )
+          showConfirm('Limpiar Playlist', '¿Estas seguro de borrar toda la playlist?', 'Limpiar', 'Cancelar', () => {
+            socketRef.current?.emit('clear_playlist')
+          })
         }}
         isOpen={isMenuOpen}
         onClose={() => setIsMenuOpen(false)}

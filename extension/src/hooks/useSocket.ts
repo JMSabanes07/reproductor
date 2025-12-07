@@ -61,33 +61,26 @@ export function useSocket(
       setPlaybackState(prev => ({ ...prev, ...state }))
     })
 
-    newSocket.on(
-      'player_update',
-      (update: { position: number; duration: number; status: string }) => {
-        // Ignore updates if we recently seeked (grace period)
-        if (Date.now() < ignoreUpdatesUntilRef.current) return
+    newSocket.on('player_update', (update: { position: number; duration: number; status: string }) => {
+      // Ignore updates if we recently seeked (grace period)
+      if (Date.now() < ignoreUpdatesUntilRef.current) return
 
-        if (!isSeekingRef.current) {
-          setPlaybackState(prev => {
-            // Optimization: Don't update if values haven't changed (or changed very little)
-            if (
-              prev.position === update.position &&
-              prev.duration === update.duration &&
-              prev.status === update.status
-            ) {
-              return prev
-            }
+      if (!isSeekingRef.current) {
+        setPlaybackState(prev => {
+          // Optimization: Don't update if values haven't changed (or changed very little)
+          if (prev.position === update.position && prev.duration === update.duration && prev.status === update.status) {
+            return prev
+          }
 
-            return {
-              ...prev,
-              position: update.position,
-              duration: update.duration,
-              status: update.status as 'playing' | 'paused' | 'idle',
-            }
-          })
-        }
+          return {
+            ...prev,
+            position: update.position,
+            duration: update.duration,
+            status: update.status as 'playing' | 'paused' | 'idle',
+          }
+        })
       }
-    )
+    })
 
     newSocket.on('song_deleted', (id: number) => {
       console.log('[APP] Received song_deleted event for ID:', id)
