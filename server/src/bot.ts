@@ -343,9 +343,18 @@ export async function seekSong(guildId: string, position: number) {
       await player.setPaused(true)
     }
 
-    // Atomically update position and paused state
-    console.log(`[DEBUG] Step 2: Calling player.update with position: ${position}, paused: ${shouldBePaused}`)
-    await player.update({ position, paused: shouldBePaused })
+    // Use playTrack instead of update to enforce state
+    console.log(`[DEBUG] Step 2: Calling player.playTrack with position: ${position}, paused: ${shouldBePaused}`)
+    if (player.track) {
+      await player.playTrack({
+        track: { encoded: player.track },
+        position: position,
+        paused: shouldBePaused,
+      })
+    } else {
+      console.warn('[DEBUG] No track found in player, falling back to update')
+      await player.update({ position, paused: shouldBePaused })
+    }
 
     // Double check: Force pause if it should be paused
     if (shouldBePaused) {
