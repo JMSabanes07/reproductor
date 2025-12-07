@@ -1,58 +1,4 @@
-import { io } from 'socket.io-client'
-
 console.log('[CONTENT] Discord Music Player Content Script Loaded')
-
-// Connect to Socket.io server
-const SERVER_URL = import.meta.env.VITE_SERVER_URL || 'http://localhost:3000'
-console.log('[CONTENT] Connecting to server:', SERVER_URL)
-const socket = io(SERVER_URL)
-
-let currentGuildId: string | null = null
-
-// Load guild_id from chrome.storage
-chrome.storage.local.get(['discord_guild_id'], result => {
-  currentGuildId = (result.discord_guild_id as string) || null
-  console.log('[CONTENT] Loaded guild_id from storage:', currentGuildId)
-
-  // If already connected and have guild_id, join the room
-  if (socket.connected && currentGuildId) {
-    console.log('[CONTENT] Joining guild:', currentGuildId)
-    socket.emit('join_guild', currentGuildId)
-  }
-})
-
-// Listen for changes in guild_id
-chrome.storage.onChanged.addListener((changes, areaName) => {
-  if (areaName === 'local' && changes.discord_guild_id) {
-    currentGuildId = (changes.discord_guild_id.newValue as string) || null
-    console.log('[CONTENT] Guild ID updated:', currentGuildId)
-
-    // Join the new guild room if connected
-    if (socket.connected && currentGuildId) {
-      console.log('[CONTENT] Joining new guild:', currentGuildId)
-      socket.emit('join_guild', currentGuildId)
-    }
-  }
-})
-
-socket.on('connect', () => {
-  console.log('[CONTENT] Connected to Discord Music Player Server')
-  console.log('[CONTENT] Socket ID:', socket.id)
-
-  // Join guild room on connect if we have a guild_id
-  if (currentGuildId) {
-    console.log('[CONTENT] Joining guild on connect:', currentGuildId)
-    socket.emit('join_guild', currentGuildId)
-  }
-})
-
-socket.on('connect_error', error => {
-  console.error('[CONTENT] Connection error:', error)
-})
-
-socket.on('disconnect', reason => {
-  console.log('[CONTENT] Disconnected from server. Reason:', reason)
-})
 
 // SVG Icons
 const PLUS_ICON = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>`
@@ -144,45 +90,43 @@ function addToDiscord(btn: HTMLButtonElement, originalIcon: string, isPlaylist =
     isPlaylist,
   }
 
-  console.log('[CONTENT] Payload to send:', JSON.stringify(payload, null, 2))
-  console.log('[CONTENT] Socket connected:', socket.connected)
-  console.log('[CONTENT] Current guild_id:', currentGuildId)
-
-  if (!socket.connected) {
-    console.error('[CONTENT] Socket not connected!')
-    updateButtonState(btn, 'error', originalIcon)
-    setTimeout(() => {
-      updateButtonState(btn, 'idle', originalIcon)
-    }, 3000)
-    return
-  }
-
-  if (!currentGuildId) {
-    console.error('[CONTENT] No guild_id set! Please set Discord Server ID in the extension popup.')
-    alert('Please set your Discord Server ID in the extension popup first!')
-    return
-  }
-
   updateButtonState(btn, 'loading', originalIcon)
 
-  if (isPlaylist) {
-    console.log('[CONTENT] Emitting import_playlist event')
-    socket.emit('import_playlist', payload)
-  } else {
-    console.log('[CONTENT] Emitting add_song event')
-    socket.emit('add_song', payload)
-  }
+  const messageType = isPlaylist ? 'IMPORT_PLAYLIST' : 'ADD_SONG'
+  console.log(`[CONTENT] Sending message ${messageType} to background`)
 
-  // Show success state after 1 second
-  setTimeout(() => {
-    updateButtonState(btn, 'success', originalIcon)
-    // Reset to idle after 3 seconds
-    setTimeout(() => {
-      updateButtonState(btn, 'idle', originalIcon)
-    }, 3000)
-  }, 1000)
+  chrome.runtime.sendMessage({ type: messageType, payload }, response => {
+    console.log('[CONTENT] Response from background:', response)
 
-  console.log('[CONTENT] Event emitted successfully')
+    if (chrome.runtime.lastError) {
+      console.error('[CONTENT] Runtime error:', chrome.runtime.lastError)
+      updateButtonState(btn, 'error', originalIcon)
+      setTimeout(() => {
+        updateButtonState(btn, 'idle', originalIcon)
+      }, 3000)
+      return
+    }
+
+    if (response && response.success) {
+      // Show success state after 1 second
+      setTimeout(() => {
+        updateButtonState(btn, 'success', originalIcon)
+        // Reset to idle after 3 seconds
+        setTimeout(() => {
+          updateButtonState(btn, 'idle', originalIcon)
+        }, 3000)
+      }, 1000)
+    } else {
+      console.error('[CONTENT] Error from background:', response?.error)
+      if (response?.error === 'No Guild ID set') {
+        alert('Please set your Discord Server ID in the extension popup first!')
+      }
+      updateButtonState(btn, 'error', originalIcon)
+      setTimeout(() => {
+        updateButtonState(btn, 'idle', originalIcon)
+      }, 3000)
+    }
+  })
 }
 
 // Add spinner keyframes
@@ -205,21 +149,13 @@ function injectButtons() {
     container.style.alignItems = 'center'
     container.style.gap = '4px'
 
-    const addSongBtn = createButton(
-      PLUS_ICON,
-      () => addToDiscord(addSongBtn, PLUS_ICON, false),
-      true
-    )
+    const addSongBtn = createButton(PLUS_ICON, () => addToDiscord(addSongBtn, PLUS_ICON, false), true)
     addSongBtn.title = 'Add Song to Discord Player'
     container.appendChild(addSongBtn)
 
     if (new URLSearchParams(window.location.search).get('list')) {
       console.log('[CONTENT] Playlist detected, adding playlist button')
-      const addPlaylistBtn = createButton(
-        LIST_PLUS_ICON,
-        () => addToDiscord(addPlaylistBtn, LIST_PLUS_ICON, true),
-        false
-      )
+      const addPlaylistBtn = createButton(LIST_PLUS_ICON, () => addToDiscord(addPlaylistBtn, LIST_PLUS_ICON, true), false)
       addPlaylistBtn.title = 'Add Playlist to Discord Player'
       container.appendChild(addPlaylistBtn)
     }
