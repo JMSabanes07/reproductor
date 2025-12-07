@@ -61,7 +61,7 @@ function AppContent() {
   }
 
   const playbackActions = usePlayback(socketRef, setPlaybackState, ignoreUpdatesUntilRef, showConfirm)
-  const seekControls = useSeek(socketRef, playbackState, ignoreUpdatesUntilRef, setPlaybackState)
+  const seekControls = useSeek(socketRef, playbackState, setPlaybackState)
 
   // Sync isSeeking state to ref for socket updates
   useEffect(() => {

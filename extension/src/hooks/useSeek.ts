@@ -13,7 +13,6 @@ interface UseSeekReturn {
 export function useSeek(
   socketRef: React.MutableRefObject<Socket | null>,
   playbackState: PlaybackState,
-  ignoreUpdatesUntilRef: React.MutableRefObject<number>,
   setPlaybackState: React.Dispatch<React.SetStateAction<PlaybackState>>
 ): UseSeekReturn {
   const [isSeeking, setIsSeeking] = useState(false)
